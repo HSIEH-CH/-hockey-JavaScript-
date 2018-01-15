@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>曲棍球</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+   
+    <canvas id="canvas" width="1500" height="800"></canvas>
+
+    <script src="utils.js"></script>
+    <script src="ball.js"></script>
+	<script src="line.js"></script>
+    <script>
+    window.onload = function () {
+      var canvas = document.getElementById('canvas'),
+          context = canvas.getContext('2d'),
+          me = new Ball(60,"#55AAff"),
+          disc = new Ball(40),
+		  pc = new Ball(60,"#55AAff"),
+          bounce = -1.0,
+		  line = new Line(10, 10, canvas.width-10, 10),
+		  mouse = utils.captureMouse(canvas),
+		  Switch=true,
+		  pc_speed = 15,
+		  me_score=0,
+		  pc_score=0
+		  game_start=false,
+		  disc_x= canvas.width/8*3,
+		  move=false,
+		  t=0;
+		 drawline();
+		context.font = "48pt Arial";
+		context.fillText("曲棍球",canvas.width/2-72,canvas.height/2-48);
+		context.font = "32pt Arial";
+		context.fillText("點擊滑鼠左鍵，開始遊戲",canvas.width/2-220,canvas.height/2+48);
+		context.font = "24pt Arial";
+		context.fillText("班級:四子二丙",canvas.width/2-100,canvas.height/2+100);
+		context.fillText("學生:謝宸豪",canvas.width/2-100,canvas.height/2+132);
+		context.fillText("學號:1104105330",canvas.width/2-100,canvas.height/2+164);
+
+     function onClick(){
+		 if(!game_start){
+			disc.x = disc_x;
+			disc.y = canvas.height/2;
+			disc.vx =0;
+			disc.vy =0;
+			me.x = canvas.width/6;
+			me.y = canvas.height/2;
+			pc.x = canvas.width/6*5;
+			pc.y = canvas.height/2;
+			game_start = true;
+			move = false;
+			t=0;
+		 }
+	 }
+	 
+	  function onMouseMove(){
+	  move = true;
+
+
+		
+		collision(me,disc);
+	  }
+	  canvas.addEventListener('mousemove',onMouseMove,false);
+	  canvas.addEventListener('mouseup',onClick,false);
+	  
+      function checkWalls (ball,radius) {
+		if(ball.x-radius<10+Math.abs(ball.vx) & ball.vx <0&(ball.y<canvas.height/8*3 | ball.y>canvas.height/8*5)) {ball.vx*=bounce;ball.x = 10+ball.radius;}
+		if(ball.x+radius>canvas.width-10-Math.abs(ball.vx) & ball.vx >0  & (ball.y<canvas.height/8*3 | ball.y>canvas.height/8*5) ) {ball.vx*=bounce;ball.x = canvas.width-10-ball.radius;}
+		if((ball.y-radius<10+Math.abs(ball.vy) | ( ball.y-radius<canvas.height/8*3 & (ball.x-radius/2<10 | ball.x+radius/2>canvas.width-10))) & ball.vy<0) ball.vy*= bounce;
+		if((ball.y+radius>canvas.height-10-Math.abs(ball.vy) | (ball.y+radius> canvas.height/8*5 & (ball.x-radius/2 <10 | ball.x+radius/2 > canvas.width-10)))& ball.vy>0) ball.vy*=bounce;
+		
+		if(ball.x+ball.radius*5<0) {pc_score+=1;game_start = false; disc_x= canvas.width/8*3;
+		context.fillText("點擊畫面繼續遊戲",canvas.width/2-170,canvas.height/2);}//PC得分
+		if(ball.x-ball.radius*5>canvas.width){ me_score+=1;game_start = false; disc_x= canvas.width/8*5;
+		context.fillText("點擊畫面繼續遊戲",canvas.width/2-170,canvas.height/2);}//玩家得分
+	}
+
+		function collision(b1,b2){//球與球碰撞事件
+		var distance =Math.sqrt(Math.pow(b1.x-b2.x,2)+Math.pow(b1.y-b2.y,2));
+		if(b1.Switch & (distance <= b1.radius+b2.radius)){
+			if(b2.x+b2.radius-b1.x-b1.radius>0) {if(b2.vx < 0) b2.vx *= bounce;}
+			else{if(b2.vx>0) b2.vx*=bounce;}
+			if(b2.y+b2.radius-b1.y-b1.radius>0){if(b2.vy<0) b2.vy *= bounce;}
+			else{if(b2.vy>0) b2.vy*=bounce;}
+			b2.vx += (b2.x-b1.x)/10+b1.vx;
+			b2.vy += (b2.y-b1.y)/10+b1.vy;
+			b1.Switch = false;
+		}else if(distance>b1.radius+b2.radius )b1.Switch = true;
+		
+	}
+		function AI(){
+			pc.vx = pc.x-pc.ox;
+			pc.vy = pc.y-pc.oy;
+			pc.ox = pc.x;pc.oy = pc.y;
+			if(disc.x < canvas.width/2 | t>10){
+				if(pc.x - pc.radius > canvas.width/6*5) pc.x += -pc_speed;
+				else if(pc.x + pc.radius < canvas.width/6*5) pc.x += pc_speed;
+				if(pc.y-pc.radius > canvas.height/2) pc.y += -pc_speed;
+				else if(pc.y + pc.radius < canvas.height/2) pc.y += pc_speed;
+				else t=0;
+			}
+			else{
+				if(pc.y < disc.y-pc.radius & !(pc.y+pc.radius<disc.y-disc.radius & pc.y-pc.radius>disc.y+disc.radius)) pc.y += pc_speed;
+				else if(pc.y > disc.y+pc.radius & !(pc.y+pc.radius<disc.y-disc.radius & pc.y-pc.radius>disc.y+disc.radius)) pc.y += -pc_speed;
+				
+				if(disc.x>pc.x & !(pc.x+pc.radius<disc.x-disc.radius & pc.x-pc.radius>disc.x+disc.radius)){//當飛盤在PC的後方
+				pc.x += pc_speed;
+					if(disc.y<pc.y){//飛盤在PC的上方
+						pc.y+=pc_speed;
+						if(pc.y-pc.radius<disc.y)pc.y+=pc_speed;
+					}
+				}else{//飛盤在PC的前方
+					if(pc.x-pc.radius > disc.x+disc.radius) pc.x += -pc_speed;
+				}
+				
+				
+				if (pc.x - pc.radius*2 <= canvas.width / 2)  pc.x = canvas.width / 2+pc.radius; //PC邊界限制
+				if (pc.x + pc.radius*2 >= canvas.width - 10) pc.x = canvas.width - 10 - pc.radius*2;
+				if (pc.y - pc.radius*2 <= 10) pc.y = 10 + pc.radius*2;
+				if (pc.y + pc.radius*2 >= canvas.height - 10) pc.y = canvas.height - 10 - pc.radius*2;
+			}
+			if(pc.ox==pc.x & pc.oy == pc.y) t+=1;
+			
+		}
+	
+		function drawline(){
+			context.moveTo(10,canvas.height/8*3);context.lineTo(10,10);
+			context.lineTo(canvas.width-10,10);context.lineTo(canvas.width-10,canvas.height/8*3);
+			context.moveTo(10,canvas.height/8*5);context.lineTo(10,canvas.height-10);
+			context.lineTo(canvas.width-10,canvas.height-10);context.lineTo(canvas.width-10,canvas.height/8*5);
+			context.moveTo(canvas.width/2,10);context.lineTo(canvas.width/2,canvas.height-10);
+			context.stroke();
+		}
+      (function drawFrame () {
+	  
+        window.requestAnimationFrame(drawFrame, canvas);
+		if(!game_start) return ;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+		collision(me,disc);
+		collision(pc,disc);
+		if(disc.vx>40) disc.vx = 40;
+		if(disc.vy>40) disc.vy =40;
+		if(disc.vx>1 | disc.vy>1){
+			disc.vx*=0.99;
+			disc.vy*=0.99;
+		}
+        disc.x += disc.vx;
+        disc.y += disc.vy;
+		if(mouse.x<canvas.width/2-me.radius & mouse.x>10+me.radius & mouse.y >10+me.radius & mouse.y < canvas.height-10-me.radius){
+			me.vx = mouse.x-me.x;
+			me.vy = mouse.y-me.y;
+		}else{
+			me.vx = 0;
+			me.vy = 0;
+		}
+		
+
+		if(mouse.x-me.radius<10) me.x = me.radius+10;
+		else if (mouse.x+me.radius>canvas.width/2) me.x = canvas.width/2-me.radius;
+		else me.x = mouse.x;
+		if(mouse.y-me.radius<10) me.y = me.radius+10;
+		else if(mouse.y +me.radius>canvas.height-10) me.y = canvas.height-10-me.radius;
+		else me.y = mouse.y;
+		
+		
+		
+		if(move) AI();
+        checkWalls(disc,disc.radius);
+        me.draw(context);
+        disc.draw(context);
+		pc.draw(context);
+		//line.draw(context);
+		drawline();
+		context.font = "32pt Arial";
+		context.fillText(me_score,canvas.width/2-60,80);
+		context.fillText(pc_score,canvas.width/2+40,80);
+
+
+      }());
+    };
+    </script>
+  </body>
+</html>
